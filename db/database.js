@@ -77,5 +77,23 @@ db.exec(`
     END;
 `);
 
+db.exec(`
+    CREATE TABLE IF NOT EXISTS positions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        x REAL,
+        y REAL,
+        number INTEGER,
+        carId INTEGER, 
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TRIGGER IF NOT EXISTS tg_positions_updated_at
+    AFTER UPDATE
+    ON positions FOR EACH ROW
+    BEGIN
+    UPDATE positions SET updatedAt = CURRENT_TIMESTAMP
+        WHERE id = old.id;
+    END;
+`);
 
 export { db };
