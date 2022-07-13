@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import userRouter from './routes/users.js';
+import carRouter from './routes/cars.js';
+import keyRouter from './routes/keys.js';
 import moment from 'moment';
 
 const app = express();
@@ -10,6 +12,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/users", userRouter);
+app.use("/cars", carRouter);
+app.use("/keys", keyRouter);
 
 app.get('/', (req, res) => {
     res.send('Hello World!');

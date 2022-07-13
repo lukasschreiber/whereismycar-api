@@ -44,6 +44,37 @@ db.exec(`
     UPDATE cars SET updatedAt = CURRENT_TIMESTAMP
         WHERE id = old.id;
     END;
+    CREATE TABLE IF NOT EXISTS userCars (
+        userId INTEGER,
+        carId INTEGER,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TRIGGER IF NOT EXISTS tg_userCars_updated_at
+    AFTER UPDATE
+    ON userCars FOR EACH ROW
+    BEGIN
+    UPDATE userCars SET updatedAt = CURRENT_TIMESTAMP
+        WHERE id = old.id;
+    END;
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uuid VARCHAR(255),
+        name VARCHAR(255),
+        carId INTEGER, 
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TRIGGER IF NOT EXISTS tg_keys_updated_at
+    AFTER UPDATE
+    ON keys FOR EACH ROW
+    BEGIN
+    UPDATE keys SET updatedAt = CURRENT_TIMESTAMP
+        WHERE id = old.id;
+    END;
 `);
 
 

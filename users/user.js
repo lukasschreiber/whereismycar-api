@@ -157,7 +157,7 @@ export const GetUser = async (req, res) => {
         });
     } catch (error) {
         console.error("user-not-found-error", error);
-        return res.stat(500).json({
+        return res.status(500).json({
             error: true,
             message: error.message,
         });
