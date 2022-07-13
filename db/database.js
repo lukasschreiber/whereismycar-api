@@ -12,9 +12,10 @@ db.exec(`
         password VARCHAR(255),             
         resetPasswordToken VARCHAR(255), 
         resetPasswordExpires DATETIME,   
-        emailToken VARCHAR(255), 
+        emailToken INTEGER, 
         emailTokenExpires DATETIME,
-        accessToken VARCHAR(255),          
+        accessToken VARCHAR(255),
+        active BOOLEAN,          
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -23,6 +24,24 @@ db.exec(`
     ON users FOR EACH ROW
     BEGIN
     UPDATE users SET updatedAt = CURRENT_TIMESTAMP
+        WHERE id = old.id;
+    END;
+`);
+
+// create car
+db.exec(`
+    CREATE TABLE IF NOT EXISTS cars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        license VARCHAR(255),
+        name VARCHAR(255), 
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TRIGGER IF NOT EXISTS tg_cars_updated_at
+    AFTER UPDATE
+    ON cars FOR EACH ROW
+    BEGIN
+    UPDATE cars SET updatedAt = CURRENT_TIMESTAMP
         WHERE id = old.id;
     END;
 `);
