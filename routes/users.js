@@ -1,6 +1,6 @@
 import express from "express";
 import validateToken from '../middleware/authenticate.js';
-import * as User from '../users/user.js';
+import * as User from '../controllers/user.js';
 
 const router = express.Router();
 router.post("/signup", User.Signup);

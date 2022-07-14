@@ -1,6 +1,6 @@
 import express from "express";
 import validateToken from '../middleware/authenticate.js';
-import * as Key from '../keys/key.js';
+import * as Key from '../controllers/key.js';
 
 const router = express.Router();
 router.post("/", validateToken, Key.CreateKey);

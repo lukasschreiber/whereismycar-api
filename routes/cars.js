@@ -1,6 +1,6 @@
 import express from "express";
 import validateToken from '../middleware/authenticate.js';
-import * as Car from '../cars/car.js';
+import * as Car from '../controllers/car.js';
 
 const router = express.Router();
 router.post("/", validateToken, Car.CreateCar);

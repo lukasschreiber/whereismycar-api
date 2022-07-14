@@ -10,14 +10,10 @@ const keySchema = joi.object({
 export const DeleteKey = async (req, res) => {
     try {
         db.prepare("DELETE FROM keys WHERE uuid = ?").run(req.params.uuid);
-        return res.send({
-            success: true,
-            message: "Deletion Success"
-        });
+        return res.status(204).send();
     } catch (error) {
-        console.error("key-not-found-error", error);
+        console.error(error);
         return res.status(500).json({
-            error: true,
             message: error.message,
         });
     }
@@ -26,18 +22,18 @@ export const DeleteKey = async (req, res) => {
 
 export const GetKey = async (req, res) => {
     try {
-        const car = db.prepare("SELECT * FROM keys WHERE uuid = ?").get(req.params.uuid);
-        if (!car) throw ("key-not-found-error");
-        const { name, license } = car;
+        const key = db.prepare("SELECT * FROM keys WHERE uuid = ?").get(req.params.uuid);
+        if (!key) throw ("key-not-found-error");
+        const { name, uuid, createdAt, updatedAt } = key;
         return res.send({
-            success: true,
             name,
-            license
+            uuid,
+            createdAt, 
+            updatedAt
         });
     } catch (error) {
-        console.error("key-not-found-error", error);
+        console.error(error);
         return res.status(500).json({
-            error: true,
             message: error.message,
         });
     }
@@ -46,29 +42,27 @@ export const GetKey = async (req, res) => {
 export const UpdateKey = async (req, res) => {
     if (!req.body.name) {
         console.log(result.error.message);
-        return res.json({
-            error: true,
-            status: 400,
+        return res.status(400).json({
             message: "field name must be set",
         });
     }
 
     db.prepare("UPDATE keys SET name = ? WHERE uuid = ?").run(req.body.name, req.params.uuid);
-
-    return res.status(200).json({
-        success: true,
-        message: "Update Success",
+    const key = db.prepare("SELECT * FROM keys WHERE uuid = ?").get(req.params.uuid);
+    const { name, uuid, createdAt, updatedAt } = key;
+    return res.send({
+        name,
+        createdAt,
+        updatedAt,
+        uuid,
     });
 };
 
 export const CreateKey = async (req, res) => {
-    // console.log(req.params.license);
     const result = keySchema.validate(req.body);
     if (result.error) {
         console.log(result.error.message);
-        return res.json({
-            error: true,
-            status: 400,
+        return res.status(400).json({
             message: result.error.message,
         });
     }
@@ -78,7 +72,6 @@ export const CreateKey = async (req, res) => {
     db.prepare('INSERT INTO keys (carId, name, uuid) VALUES(?,?,?)').run(car.id, result.value.name, id);
 
     return res.status(200).json({
-        success: true,
         message: "Creation Success",
         uuid: id
     });
