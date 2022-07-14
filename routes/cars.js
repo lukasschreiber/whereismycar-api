@@ -5,6 +5,7 @@ import * as Car from '../controllers/car.js';
 const router = express.Router();
 router.post("/", validateToken, Car.CreateCar);
 router.post("/:license/park", validateToken, Car.StorePosition);
+router.post("/:license/invite", validateToken, Car.InviteUserToCar);
 router.get("/", validateToken, Car.GetCars);
 router.patch("/:license", validateToken, Car.UpdateCar);
 router.get("/:license", validateToken, Car.GetCar);

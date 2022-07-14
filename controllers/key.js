@@ -8,6 +8,7 @@ const keySchema = joi.object({
 });
 
 export const DeleteKey = async (req, res) => {
+    // check if key is mine
     try {
         db.prepare("DELETE FROM keys WHERE uuid = ?").run(req.params.uuid);
         return res.status(204).send();
@@ -21,6 +22,7 @@ export const DeleteKey = async (req, res) => {
 
 
 export const GetKey = async (req, res) => {
+    // check if key is mine
     try {
         const key = db.prepare("SELECT * FROM keys WHERE uuid = ?").get(req.params.uuid);
         if (!key) throw ("key-not-found-error");
@@ -40,6 +42,7 @@ export const GetKey = async (req, res) => {
 };
 
 export const UpdateKey = async (req, res) => {
+    // check if key is mine
     if (!req.body.name) {
         console.log(result.error.message);
         return res.status(400).json({

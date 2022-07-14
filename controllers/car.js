@@ -12,9 +12,25 @@ const positionSchema = joi.object({
     number: joi.number().allow(null)
 });
 
+const invitationSchema = joi.object({
+    email: joi.string().required()
+});
+
+const userHasRights = (uuid, license) => {
+    const userId = db.prepare("SELECT id FROM users WHERE uuid = ?").get(uuid);
+    return db.prepare("SELECT * FROM cars INNER JOIN userCars ON userCars.carId = cars.id WHERE license = ? AND userId = ?").all(license, userId.id).length > 0;
+};
+
 export const DeleteCar = async (req, res) => {
+    // check if car is mine
+    if (!userHasRights(req.decodedToken.id, req.params.license)) {
+        return res.status(403).send();
+    }
+
     try {
+        const carId = db.prepare("SELECT id FROM cars WHERE license = ?").get(req.params.license);
         db.prepare("DELETE FROM cars WHERE license = ?").run(req.params.license);
+        db.prepare("DELETE FROM userCars WHERE carId = ?").run(carId.id);
         return res.status(204).send();
     } catch (error) {
         console.error(error);
@@ -25,7 +41,8 @@ export const DeleteCar = async (req, res) => {
 };
 
 export const GetCars = async (req, res) => {
-    const cars = db.prepare("SELECT * FROM cars INNER JOIN userCars ON userCars.carId = cars.id").all();
+    const userId = db.prepare("SELECT id FROM users WHERE uuid = ?").get(req.decodedToken.id);
+    const cars = db.prepare("SELECT * FROM cars INNER JOIN userCars ON userCars.carId = cars.id WHERE userId = ? AND active = TRUE").all(userId.id);
     return res.send(cars.map(car => ({
         license: car.license,
         name: car.name,
@@ -37,9 +54,13 @@ export const GetCars = async (req, res) => {
 };
 
 export const GetCar = async (req, res) => {
+    if (!userHasRights(req.decodedToken.id, req.params.license)) {
+        return res.status(403).send();
+    }
+
     try {
-        const car = db.prepare("SELECT * FROM cars WHERE license = ?").get(req.params.license);
-        if (!car) throw ({message: "Car not found"});
+        const car = db.prepare("SELECT * FROM cars INNER JOIN userCars ON userCars.carId = cars.id WHERE license = ? AND active = TRUE").get(req.params.license);
+        if (!car) throw ({ message: "Car not found" });
         const { name, license, createdAt, updatedAt } = car;
         return res.send({
             name,
@@ -58,12 +79,18 @@ export const GetCar = async (req, res) => {
 };
 
 export const UpdateCar = async (req, res) => {
+    if (!userHasRights(req.decodedToken.id, req.params.license)) {
+        return res.status(403).send();
+    }
+
     if (!req.body.name) {
         console.log(result.error.message);
         return res.status(400).json({
             message: "field name must be provided",
         });
     }
+
+    // check if car is mine
 
     db.prepare("UPDATE cars SET name = ? WHERE license = ?").run(req.body.name, req.params.license);
 
@@ -100,9 +127,9 @@ export const CreateCar = async (req, res) => {
     const newCar = db.prepare('INSERT INTO cars (license, name) VALUES(?,?)').run(result.value.license, result.value.name);
     const user = db.prepare('SELECT id FROM users WHERE uuid = ?').get(req.decodedToken.id);
 
-    db.prepare('INSERT INTO userCars (userId, carId) VALUES(?,?)').run(user.id, newCar.lastInsertRowid);
+    db.prepare('INSERT INTO userCars (userId, carId, active) VALUES(?,?,?)').run(user.id, newCar.lastInsertRowid, true);
 
-    const car = db.prepare("SELECT * FROM cars WHERE license = ?").get(req.params.license);
+    const car = db.prepare("SELECT * FROM cars WHERE license = ?").get(result.value.license);
     const { name, license, createdAt, updatedAt } = car;
     return res.send({
         name,
@@ -114,7 +141,43 @@ export const CreateCar = async (req, res) => {
     });
 };
 
+export const InviteUserToCar = (req, res) => {
+    // check if key is mine
+    if (!userHasRights(req.decodedToken.id, req.params.license)) {
+        return res.status(403).send();
+    }
+
+    const result = invitationSchema.validate(req.body);
+    if (result.error) {
+        console.log(result.error.message);
+        return res.status(400).json({
+            message: result.error.message,
+        });
+    }
+
+    const car = db.prepare("SELECT id from cars WHERE license = ?").get(req.params.license);
+    const user = db.prepare("SELECT id from users WHERE email = ?").get(result.value.email);
+    db.prepare('INSERT INTO userCars (userId, carId, active) VALUES(?,?,false)').run(user.id, car.id); // create invitation code that expires after a short time
+
+    if (!user) {
+        return res.status(400).json({
+            message: "There is no user with this email address.",
+        });
+    }
+
+    return res.status(200).json({
+        message: "Invited User"
+    });
+};
+
+// activate invitation
+
 export const StorePosition = (req, res) => {
+    // check if key is mine
+    if (!userHasRights(req.decodedToken.id, req.params.license)) {
+        return res.status(403).send();
+    }
+
     const result = positionSchema.validate(req.body);
     if (result.error) {
         console.log(result.error.message);

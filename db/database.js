@@ -45,8 +45,10 @@ db.exec(`
         WHERE id = old.id;
     END;
     CREATE TABLE IF NOT EXISTS userCars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         userId INTEGER,
         carId INTEGER,
+        active BOOLEAN,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
