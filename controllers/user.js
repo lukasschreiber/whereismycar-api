@@ -161,6 +161,7 @@ export const Activate = async (req, res) => {
             });
         }
 
+        // check if token is expired
         const user = db.prepare("SELECT * FROM users WHERE email = ? AND emailToken = ?").get(email, code);
         if (!user) {
             return res.status(400).json({
@@ -174,11 +175,11 @@ export const Activate = async (req, res) => {
 
             db.prepare("UPDATE users SET emailToken = ?, emailTokenExpires = NULL, active = TRUE WHERE id = ?").run("", user.id);
             return res.status(200).json({
-                message: "Account activated.",
+                message: "Account activated",
             });
         }
     } catch (error) {
-        console.error("activation-error", error);
+        console.error(error);
         return res.status(500).json({
             message: error.message,
         });

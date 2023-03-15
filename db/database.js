@@ -62,6 +62,17 @@ db.exec(`
 `);
 
 db.exec(`
+CREATE TABLE IF NOT EXISTS invitations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userCarsId INTEGER,
+    token INTEGER,
+    tokenExpires DATETIME,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+)
+`)
+
+db.exec(`
     CREATE TABLE IF NOT EXISTS keys (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         uuid VARCHAR(255),

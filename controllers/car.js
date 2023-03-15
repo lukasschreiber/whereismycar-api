@@ -13,7 +13,12 @@ const positionSchema = joi.object({
 });
 
 const invitationSchema = joi.object({
-    email: joi.string().required()
+    email: joi.string().email({ minDomainSegments: 2 }),
+});
+
+const acceptInvitationSchema = joi.object({
+    code: joi.number().required(),
+    email: joi.string().email({ minDomainSegments: 2 })
 });
 
 const userHasRights = (uuid, license) => {
@@ -157,7 +162,13 @@ export const InviteUserToCar = (req, res) => {
 
     const car = db.prepare("SELECT id from cars WHERE license = ?").get(req.params.license);
     const user = db.prepare("SELECT id from users WHERE email = ?").get(result.value.email);
-    db.prepare('INSERT INTO userCars (userId, carId, active) VALUES(?,?,false)').run(user.id, car.id); // create invitation code that expires after a short time
+    const insertion = db.prepare('INSERT INTO userCars (userId, carId, active) VALUES(?,?,false)').run(user.id, car.id);
+
+    let code = Math.floor(100000 + Math.random() * 900000);  //Generate random 6 digit code.                             
+    let expiry = new Date(Date.now() + 60 * 1000 * 60);  //Set expiry 60 mins ahead from now
+    db.prepare("INSERT INTO invitations (userCarsId, token, tokenExpires) VALUES(?,?,?)").run(insertion.lastInsertRowid, code, expiry.toSQLString())
+    
+    // mail code to invited user
 
     if (!user) {
         return res.status(400).json({
@@ -171,6 +182,27 @@ export const InviteUserToCar = (req, res) => {
 };
 
 // activate invitation
+export const AcceptInvitation = (req, res) => {
+    const result = acceptInvitationSchema.validate(req.body);
+    if (result.error) {
+        console.log(result.error.message);
+        return res.status(400).json({
+            message: result.error.message,
+        });
+    }
+
+    const {email, code} = result.value;
+
+    // check if token is expired and check for email
+    db.prepare(`UPDATE userCars SET active = true 
+                WHERE id = (SELECT userCarsId FROM invitations WHERE token = ?) 
+                AND (SELECT email FROM users INNER JOIN userCars ON userCars.userId = users.id WHERE email = ?)`).run(code, email);
+
+    console.log(code, email, db.prepare(`SELECT id FROM userCars WHERE id = (SELECT userCarsId FROM invitations WHERE token = ?)`).get(code))
+
+    res.status(204).send()
+}
+
 
 export const StorePosition = (req, res) => {
     // check if key is mine
